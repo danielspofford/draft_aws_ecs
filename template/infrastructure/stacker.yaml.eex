@@ -1,0 +1,101 @@
+namespace: ${namespace}
+stacker_bucket: <%= app_name %>-stacker-bucket
+sys_path: .
+
+mappings:
+  AmiMap:
+    us-east-2:
+      bastion: ami-965e6bf3
+
+
+stacks:
+  - name: vpc
+    class_path: stacker_blueprints.vpc.VPC
+    variables:
+      AZCount: ${vpc_az_count}
+      UseNatGateway: true
+      PublicSubnets:
+        - 10.128.0.0/24
+        - 10.128.1.0/24
+        - 10.128.2.0/24
+        - 10.128.3.0/24
+      PrivateSubnets:
+        - 10.128.8.0/22
+        - 10.128.12.0/22
+        - 10.128.16.0/22
+        - 10.128.20.0/22
+      CidrBlock: 10.128.0.0/16
+      InternalDomain: <%= app_name %>
+
+  - name: <%= app_name %>-rds
+    class_path: blueprints.rds.PostgresMaster
+    variables:
+      AllocatedStorage: ${rds_<%= app_name %>_allocated_storage}
+      DBFamily: postgres10
+      DBInstanceIdentifier: <%= app_name %>-${namespace}
+      DatabaseName: ${rds_<%= app_name %>_dbname}
+      EngineVersion: "10.4"
+      InstanceType: ${rds_<%= app_name %>_instance_type}
+      InternalHostname: <%= app_name %>-db
+      InternalZoneId: ${output vpc::InternalZoneId}
+      InternalZoneName: ${output vpc::InternalZoneName}
+      MasterUser: ${rds_<%= app_name %>_username}
+      MasterUserPassword: ${rds_<%= app_name %>_password}
+      MultiAZ: ${rds_<%= app_name %>_multi_az}
+      StorageEncrypted: ${rds_<%= app_name %>_encrypted}
+      Subnets: ${output vpc::PrivateSubnets}
+      VpcId: ${output vpc::VpcId}
+      existingSecurityGroup: ${output securityrules::RDSSecurityGroupId}
+
+  - name: bastion
+    class_path: stacker_blueprints.bastion.Bastion
+    variables:
+      AvailabilityZones: ${output vpc::AvailabilityZones}
+      DefaultSG: ${output vpc::DefaultSG}
+      InstanceType: t2.nano
+      MaxSize: 1
+      OfficeNetwork: 68.169.158.0/24
+      PrivateSubnets: ${output vpc::PrivateSubnets}
+      PublicSubnets: ${output vpc::PublicSubnets}
+      SshKeyName: ${keypair}
+      VpcId: ${output vpc::VpcId}
+
+  - name: securityrules
+    class_path: blueprints.security_groups.SecurityGroupRules
+    variables:
+      VpcId: ${output vpc::VpcId}
+
+  # - name: <%= app_name %>-rds-bastion
+  #   class_path: stacker_blueprints.security_rules.Rules
+  #   variables:
+  #     IngressRules:
+  #       BastionAccess:
+  #         GroupId: ${output <%= app_name %>-rds::SecurityGroup}
+  #         FromPort: "5432"
+  #         ToPort: "5432"
+  #         IpProtocol: "tcp"
+  #         SourceSecurityGroupId: ${output bastion::SecurityGroup}
+
+  - name: <%= app_name %>-ecr
+    class_path: stacker_blueprints.ecr.Repositories
+    variables:
+      Repositories:
+        - <%= app_name %>${env}
+
+  - name: <%= app_name %>-web-stack
+    class_path: blueprints.ecs_stack.EcsWebStack
+    variables:
+      Image: ${envvar <%= String.upcase(app_name) %>_IMAGE}
+      ContainerEnvironment:
+        DATABASE_URL: "postgres://${rds_<%= app_name %>_username}:${rds_<%= app_name %>_password}@<%= app_name %>-db.<%= app_name %>/${rds_<%= app_name %>_dbname}?ssl=true"
+        # GUARDIAN_SECRET: ${envvar GUARDIAN_SECRET}
+        # HOST_DOMAIN: ${<%= app_name %>_domain}
+        POOL_SIZE: "${rds_<%= app_name %>_client_pool_size}"
+        SECRET_KEY_BASE: ${envvar SECRET_KEY_BASE}
+      DatabaseSecurityGroup: ${output <%= app_name %>-rds::SecurityGroup}
+      # Domain: ${<%= app_name %>_domain}
+      DomainZoneId: Z2X2RMGPBN5TCO
+      # SslCertificateArn: arn:aws:acm:us-east-2:123123:certificate/123123-ee04-1234-1234-1234
+      Subnets: ${output vpc::PublicSubnets}
+      VpcId: ${output vpc::VpcId}
+      WebPort: "5000"
