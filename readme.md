@@ -17,11 +17,11 @@ mix archive.install github danielspofford/draft
 Execute this template:
 
 ```
-mix draft.execute danielspofford/draft_aws_ecs namespace
+mix draft.github danielspofford/draft_aws_ecs --app-name=your_app_name
 ```
 
-`namespace` can be any string, usually a project name. It will be used when
-naming resources.
+`--app-name` can be any string, usually your application's name. It will be used
+when naming resources.
 
 ### Further usage
 
