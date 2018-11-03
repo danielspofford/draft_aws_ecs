@@ -20,8 +20,8 @@ Execute this template:
 mix draft.github danielspofford/draft_aws_ecs --app-name=your_app_name
 ```
 
-`--app-name` can be any string, usually your application's name. It will be used
-when naming resources.
+`--app-name` must be a string and has only been tested to safely contain
+letters, numbers, and hyphens. It will be used when naming resources.
 
 ### Further usage
 
