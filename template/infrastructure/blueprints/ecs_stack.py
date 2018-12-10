@@ -363,7 +363,7 @@ class EcsWebStack(Blueprint):
                 Cluster=Ref(cluster),
                 DeploymentConfiguration=ecs.DeploymentConfiguration(
                     MaximumPercent=300, MinimumHealthyPercent=100),
-                DesiredCount=Ref("ServiceDesiredCount"),
+                DesiredCount=self.variables["ServiceDesiredCount"],
                 LaunchType="FARGATE",
                 TaskDefinition=Ref(self.create_ecs_task(task_execution_role, task_role)),
                 LoadBalancers=[load_balancer["ecs_balancer"]],
