@@ -96,6 +96,8 @@ stacks:
       # Domain: ${<%= app_name %>_domain}
       DomainZoneId: Z2X2RMGPBN5TCO
       # SslCertificateArn: arn:aws:acm:us-east-2:123123:certificate/123123-ee04-1234-1234-1234
-      Subnets: ${output vpc::PublicSubnets}
+      PrivateSubnets: ${output vpc::PrivateSubnets}
+      PublicSubnets: ${output vpc::PublicSubnets}
+      ServiceDesiredCount: ${service_desired_count}
       VpcId: ${output vpc::VpcId}
       WebPort: "5000"

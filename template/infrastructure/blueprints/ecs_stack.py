@@ -41,9 +41,17 @@ class EcsWebStack(Blueprint):
         #     "type": str,
         #     "description": "The ARN for your SSL certificate."
         # },
-        "Subnets": {
+        "PrivateSubnets": {
             "type": types.EC2SubnetIdList,
-            "description": "Subnets for EC2 instances running ecs."
+            "description": "Private subnets for EC2 instances running ecs."
+        },
+        "PublicSubnets": {
+            "type": types.EC2SubnetIdList,
+            "description": "Public subnets for ALB."
+        },
+        "ServiceDesiredCount": {
+            "type": int,
+            "description": "The desired number of tasks."
         },
         "VpcId": {
             "type": types.EC2VPCId,
@@ -265,7 +273,7 @@ class EcsWebStack(Blueprint):
             elb.LoadBalancer(
                 "AppLoadBalancer",
                 SecurityGroups=[Ref(self.create_load_balancer_sg())],
-                Subnets=Ref("Subnets"),
+                Subnets=Ref("PublicSubnets"),
                 Type="application"))
 
         # self.create_domain(app_lb)
@@ -355,14 +363,14 @@ class EcsWebStack(Blueprint):
                 Cluster=Ref(cluster),
                 DeploymentConfiguration=ecs.DeploymentConfiguration(
                     MaximumPercent=300, MinimumHealthyPercent=100),
-                DesiredCount=1,
+                DesiredCount=Ref("ServiceDesiredCount"),
                 LaunchType="FARGATE",
                 TaskDefinition=Ref(self.create_ecs_task(task_execution_role, task_role)),
                 LoadBalancers=[load_balancer["ecs_balancer"]],
                 NetworkConfiguration=ecs.NetworkConfiguration(
                     AwsvpcConfiguration=ecs.AwsvpcConfiguration(
                         AssignPublicIp="ENABLED",
-                        Subnets=Ref("Subnets"),
+                        Subnets=Ref("PrivateSubnets"),
                         SecurityGroups=[Ref(self.create_service_sg())]))))
 
     def create_template(self):

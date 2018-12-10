@@ -17,11 +17,15 @@ mix archive.install github danielspofford/draft
 Execute this template:
 
 ```
-mix draft.github danielspofford/draft_aws_ecs --app-name=your_app_name
+mix draft.github danielspofford/draft_aws_ecs \
+  --app-name=your_app_name \
+  --service-desired-count=2
 ```
 
-`--app-name` must be a string and has only been tested to safely contain
-letters and numbers. It will be used when naming resources.
+- `--app-name` has only been tested to safely contain letters and numbers. It
+  will be used when naming resources.
+- `--service-desired-count` is the number of tasks desired to run
+  simultaneously.
 
 ### Further usage
 
